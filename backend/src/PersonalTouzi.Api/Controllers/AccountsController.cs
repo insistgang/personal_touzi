@@ -6,7 +6,7 @@ using PersonalTouzi.Infrastructure.Data;
 namespace PersonalTouzi.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/portfolio/[controller]")]
 public class AccountsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -17,24 +17,74 @@ public class AccountsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Account>>> GetAccounts()
+    public async Task<ActionResult<IEnumerable<object>>> GetAccounts()
     {
-        return await _context.Accounts.ToListAsync();
+        var accounts = await _context.Accounts.ToListAsync();
+        return accounts.Select(a => MapToDto(a)).ToList();
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Account>> GetAccount(int id)
+    public async Task<ActionResult<object>> GetAccount(int id)
     {
         var account = await _context.Accounts.FindAsync(id);
         if (account == null) return NotFound();
-        return account;
+        return MapToDto(account);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Account>> CreateAccount(Account account)
+    public async Task<ActionResult<object>> CreateAccount([FromBody] AccountDto dto)
     {
+        var account = new Account
+        {
+            Name = dto.Name,
+            Description = dto.Broker ?? dto.Type ?? "",
+            InitialCash = dto.Balance
+        };
+
         _context.Accounts.Add(account);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetAccount), new { id = account.Id }, account);
+        return CreatedAtAction(nameof(GetAccount), new { id = account.Id }, MapToDto(account));
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateAccount(int id, [FromBody] AccountDto dto)
+    {
+        var account = await _context.Accounts.FindAsync(id);
+        if (account == null) return NotFound();
+
+        account.Name = dto.Name;
+        account.Description = dto.Broker ?? dto.Type ?? account.Description;
+        account.InitialCash = dto.Balance;
+
+        await _context.SaveChangesAsync();
+        return Ok(MapToDto(account));
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAccount(int id)
+    {
+        var account = await _context.Accounts.FindAsync(id);
+        if (account == null) return NotFound();
+
+        _context.Accounts.Remove(account);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    private static object MapToDto(Account a) => new
+    {
+        id = a.Id,
+        name = a.Name,
+        broker = a.Description,
+        type = " securities", // default type
+        balance = (double)a.InitialCash
+    };
 }
+
+public record AccountDto(
+    string Name,
+    string? Broker,
+    string? Type,
+    decimal Balance
+);

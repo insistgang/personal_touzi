@@ -40,12 +40,12 @@ export interface Position {
   name: string
   type?: 'stock' | 'fund' | 'bond'
   quantity: number
-  avgCost: number
+  avgCost?: number
   costPrice: number
   currentPrice: number
-  marketValue: number
-  gainLoss: number
-  gainLossPercent: number
+  marketValue?: number
+  gainLoss?: number
+  gainLossPercent?: number
   accountId: number
 }
 

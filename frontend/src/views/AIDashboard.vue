@@ -167,7 +167,7 @@ onMounted(async () => {
   // 获取第一个账户ID
   try {
     const accounts = await apiPortfolio.getAccounts()
-    if (accounts && accounts.length > 0) {
+    if (accounts && accounts.length > 0 && accounts[0]?.id) {
       currentAccountId.value = accounts[0].id
     }
   } catch (error) {

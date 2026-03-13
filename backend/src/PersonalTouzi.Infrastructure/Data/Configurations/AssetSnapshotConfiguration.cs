@@ -10,12 +10,12 @@ public class AssetSnapshotConfiguration : IEntityTypeConfiguration<AssetSnapshot
     {
         builder.ToTable("AssetSnapshots");
         builder.HasKey(a => a.Id);
-        builder.Property(a => a.TotalAsset).HasColumnType("decimal(18,2)");
+        builder.Property(a => a.TotalAssets).HasColumnType("decimal(18,2)");
+        builder.Property(a => a.NetValue).HasColumnType("decimal(18,4)");
         builder.Property(a => a.Cash).HasColumnType("decimal(18,2)");
-        builder.Property(a => a.PositionValue).HasColumnType("decimal(18,2)");
-        builder.Property(a => a.TotalProfit).HasColumnType("decimal(18,2)");
-        builder.Property(a => a.DailyProfit).HasColumnType("decimal(18,2)");
-        builder.Property(a => a.DailyProfitPercent).HasColumnType("decimal(18,4)");
+        builder.Property(a => a.PositionsValue).HasColumnType("decimal(18,2)");
+        builder.Property(a => a.GainLoss).HasColumnType("decimal(18,2)");
+        builder.Property(a => a.GainLossPercent).HasColumnType("decimal(18,4)");
         builder.HasIndex(a => new { a.AccountId, a.SnapshotDate }).IsUnique();
     }
 }

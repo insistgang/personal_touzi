@@ -7,7 +7,7 @@ namespace PersonalTouzi.Api.Controllers;
 /// AI 服务控制器
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/ai")]
 public class AIController : ControllerBase
 {
     private readonly IAIService _aiService;

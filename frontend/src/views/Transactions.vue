@@ -248,9 +248,17 @@ const selectedAccount = ref('all')
 const showAddForm = ref(false)
 const editingTransaction = ref<any>(null)
 
-const formData = ref({
+const formData = ref<{
+  type: 'buy' | 'sell'
+  tradeDate: string
+  symbol: string
+  name: string
+  quantity: number
+  price: number
+  accountId: number
+}>({
   type: 'buy',
-  tradeDate: new Date().toISOString().split('T')[0],
+  tradeDate: new Date().toISOString().split('T')[0] || '',
   symbol: '',
   name: '',
   quantity: 100,
@@ -336,7 +344,7 @@ const closeModal = () => {
   editingTransaction.value = null
   formData.value = {
     type: 'buy',
-    tradeDate: new Date().toISOString().split('T')[0],
+    tradeDate: new Date().toISOString().split('T')[0] || '',
     symbol: '',
     name: '',
     quantity: 100,

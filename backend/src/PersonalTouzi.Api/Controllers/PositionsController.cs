@@ -6,7 +6,7 @@ using PersonalTouzi.Infrastructure.Data;
 namespace PersonalTouzi.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/portfolio/[controller]")]
 public class PositionsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -17,54 +17,65 @@ public class PositionsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Position>>> GetPositions()
+    public async Task<ActionResult<IEnumerable<object>>> GetPositions()
     {
-        return await _context.Positions.ToListAsync();
+        var positions = await _context.Positions.ToListAsync();
+        return positions.Select(p => MapToDto(p)).ToList();
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Position>> GetPosition(int id)
+    public async Task<ActionResult<object>> GetPosition(int id)
     {
         var position = await _context.Positions.FindAsync(id);
         if (position == null) return NotFound();
-        return position;
+        return MapToDto(position);
     }
 
     [HttpGet("by-account/{accountId}")]
-    public async Task<ActionResult<IEnumerable<Position>>> GetPositionsByAccount(int accountId)
+    public async Task<ActionResult<IEnumerable<object>>> GetPositionsByAccount(int accountId)
     {
-        return await _context.Positions
+        var positions = await _context.Positions
             .Where(p => p.AccountId == accountId)
             .ToListAsync();
+        return positions.Select(p => MapToDto(p)).ToList();
     }
 
     [HttpPost]
-    public async Task<ActionResult<Position>> CreatePosition(Position position)
+    public async Task<ActionResult<object>> CreatePosition([FromBody] PositionDto dto)
     {
+        var position = new Position
+        {
+            Code = dto.Symbol,
+            Name = dto.Name,
+            Type = dto.Type ?? "stock",
+            Quantity = dto.Quantity,
+            CostPrice = dto.CostPrice,
+            CurrentPrice = dto.CurrentPrice,
+            AccountId = dto.AccountId
+        };
+
         _context.Positions.Add(position);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetPosition), new { id = position.Id }, position);
+        return CreatedAtAction(nameof(GetPosition), new { id = position.Id }, MapToDto(position));
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdatePosition(int id, Position position)
+    public async Task<IActionResult> UpdatePosition(int id, [FromBody] PositionDto dto)
     {
-        if (id != position.Id) return BadRequest();
+        var position = await _context.Positions.FindAsync(id);
+        if (position == null) return NotFound();
 
-        _context.Entry(position).State = EntityState.Modified;
+        position.Code = dto.Symbol;
+        position.Name = dto.Name;
+        position.Type = dto.Type ?? position.Type;
+        position.Quantity = dto.Quantity;
+        position.CostPrice = dto.CostPrice;
+        position.CurrentPrice = dto.CurrentPrice;
+        position.AccountId = dto.AccountId;
+        position.UpdatedAt = DateTime.Now;
 
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!_context.Positions.Any(p => p.Id == id))
-                return NotFound();
-            throw;
-        }
-
-        return NoContent();
+        await _context.SaveChangesAsync();
+        return Ok(MapToDto(position));
     }
 
     [HttpDelete("{id}")]
@@ -78,4 +89,30 @@ public class PositionsController : ControllerBase
 
         return NoContent();
     }
+
+    private static object MapToDto(Position p) => new
+    {
+        id = p.Id,
+        symbol = p.Code,
+        name = p.Name,
+        type = p.Type,
+        quantity = p.Quantity,
+        avgCost = (double)p.CostPrice,
+        costPrice = (double)p.CostPrice,
+        currentPrice = (double)p.CurrentPrice,
+        marketValue = (double)p.MarketValue,
+        gainLoss = (double)p.ProfitLoss,
+        gainLossPercent = (double)p.ProfitLossPercent,
+        accountId = p.AccountId
+    };
 }
+
+public record PositionDto(
+    string Symbol,
+    string Name,
+    string? Type,
+    decimal Quantity,
+    decimal CostPrice,
+    decimal CurrentPrice,
+    int AccountId
+);

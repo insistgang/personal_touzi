@@ -6,7 +6,7 @@ public class Position
     public int AccountId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public string Type { get; set; } = "stock";
+    public string Type { get; set; } = "stock";  // stock, fund, bond
     public decimal Quantity { get; set; }
     public decimal CostPrice { get; set; }
     public decimal CurrentPrice { get; set; }

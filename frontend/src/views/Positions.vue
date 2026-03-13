@@ -215,7 +215,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { usePortfolioStore } from '@/stores/portfolio'
-import PositionTable from '@/components/PositionTable.vue'
 
 const portfolioStore = usePortfolioStore()
 
@@ -229,7 +228,15 @@ const filterType = ref('all')
 const showAddForm = ref(false)
 const editingPosition = ref<any>(null)
 
-const formData = ref({
+const formData = ref<{
+  symbol: string
+  name: string
+  type: 'stock' | 'fund' | 'bond'
+  quantity: number
+  costPrice: number
+  currentPrice: number
+  accountId: number
+}>({
   symbol: '',
   name: '',
   type: 'stock',
@@ -257,13 +264,13 @@ const filteredPositions = computed(() => {
   })
 })
 
-const getTypeName = (type: string): string => {
+const getTypeName = (type?: string): string => {
   const types: Record<string, string> = {
     stock: '股票',
     fund: '基金',
     bond: '债券'
   }
-  return types[type] || type
+  return type ? (types[type] || type) : '未知'
 }
 
 const getGainLossClass = (position: any): string => {

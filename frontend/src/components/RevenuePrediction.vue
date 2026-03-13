@@ -131,8 +131,8 @@ use([
 interface PredictionData {
   dates: string[]
   predictedValues: number[]
-  lowerBound: number[]
-  upperBound: number[]
+  lowerBounds: number[]
+  upperBounds: number[]
   expectedReturn: number
   lowerBound: number
   upperBound: number
@@ -152,7 +152,7 @@ const predictionData = ref<PredictionData | null>(null)
 
 const riskLevel = computed(() => {
   if (!predictionData.value) return '-'
-  const volatility = predictionData.value.upperBound - predictionData.value.lowerBound
+  const volatility = Math.abs(predictionData.value.upperBound - predictionData.value.lowerBound)
   if (volatility < 0.05) return '低风险'
   if (volatility < 0.15) return '中等风险'
   return '高风险'
@@ -217,7 +217,7 @@ const chartOption = computed(() => {
       {
         name: '置信区间',
         type: 'line',
-        data: predictionData.value.upperBound.map((up, i) => [(predictionData.value?.lowerBound[i] || 0), up]),
+        data: predictionData.value.upperBounds.map((up, i) => [(predictionData.value?.lowerBounds[i] || 0), up]),
         lineStyle: { opacity: 0 },
         itemStyle: { opacity: 0 },
         areaStyle: {
@@ -239,7 +239,7 @@ const chartOption = computed(() => {
       {
         name: '上限',
         type: 'line',
-        data: predictionData.value.upperBound,
+        data: predictionData.value.upperBounds,
         lineStyle: { type: 'dashed', color: '#67c23a', width: 1.5 },
         itemStyle: { color: '#67c23a' },
         showSymbol: false,
@@ -248,7 +248,7 @@ const chartOption = computed(() => {
       {
         name: '下限',
         type: 'line',
-        data: predictionData.value.lowerBound,
+        data: predictionData.value.lowerBounds,
         lineStyle: { type: 'dashed', color: '#f56c6c', width: 1.5 },
         itemStyle: { color: '#f56c6c' },
         showSymbol: false,

@@ -40,19 +40,19 @@
             </td>
             <td class="name-cell">{{ position.name }}</td>
             <td class="quantity-cell">{{ position.quantity }}</td>
-            <td class="cost-cell">¥{{ position.avgCost.toFixed(2) }}</td>
+            <td class="cost-cell">¥{{ getAvgCost(position).toFixed(2) }}</td>
             <td class="price-cell">
-              <span :class="position.currentPrice >= position.avgCost ? 'price-up' : 'price-down'">
+              <span :class="position.currentPrice >= getAvgCost(position) ? 'price-up' : 'price-down'">
                 ¥{{ position.currentPrice.toFixed(2) }}
               </span>
             </td>
-            <td class="value-cell">¥{{ position.marketValue.toFixed(2) }}</td>
-            <td class="gain-loss-cell" :class="position.gainLoss >= 0 ? 'positive' : 'negative'">
-              {{ position.gainLoss >= 0 ? '+' : '' }}¥{{ position.gainLoss.toFixed(2) }}
+            <td class="value-cell">¥{{ getMarketValue(position).toFixed(2) }}</td>
+            <td class="gain-loss-cell" :class="getGainLoss(position) >= 0 ? 'positive' : 'negative'">
+              {{ getGainLoss(position) >= 0 ? '+' : '' }}¥{{ getGainLoss(position).toFixed(2) }}
             </td>
             <td class="percent-cell">
-              <span class="percent-badge" :class="position.gainLossPercent >= 0 ? 'positive' : 'negative'">
-                {{ position.gainLossPercent >= 0 ? '+' : '' }}{{ position.gainLossPercent.toFixed(2) }}%
+              <span class="percent-badge" :class="getGainLossPercent(position) >= 0 ? 'positive' : 'negative'">
+                {{ getGainLossPercent(position) >= 0 ? '+' : '' }}{{ getGainLossPercent(position).toFixed(2) }}%
               </span>
             </td>
             <td class="actions-cell">
@@ -97,11 +97,12 @@ interface Position {
   symbol: string
   name: string
   quantity: number
-  avgCost: number
+  avgCost?: number
+  costPrice?: number
   currentPrice: number
-  marketValue: number
-  gainLoss: number
-  gainLossPercent: number
+  marketValue?: number
+  gainLoss?: number
+  gainLossPercent?: number
   accountId: number
 }
 
@@ -116,12 +117,17 @@ defineEmits<{
   delete: [position: Position]
 }>()
 
+const getAvgCost = (p: Position) => p.avgCost ?? p.costPrice ?? 0
+const getMarketValue = (p: Position) => p.marketValue ?? p.quantity * p.currentPrice
+const getGainLoss = (p: Position) => p.gainLoss ?? (getMarketValue(p) - p.quantity * getAvgCost(p))
+const getGainLossPercent = (p: Position) => p.gainLossPercent ?? ((p.currentPrice - getAvgCost(p)) / getAvgCost(p) * 100)
+
 const totalMarketValue = computed(() => {
-  return props.positions.reduce((sum, p) => sum + p.marketValue, 0)
+  return props.positions.reduce((sum, p) => sum + getMarketValue(p), 0)
 })
 
 const totalGainLoss = computed(() => {
-  return props.positions.reduce((sum, p) => sum + p.gainLoss, 0)
+  return props.positions.reduce((sum, p) => sum + getGainLoss(p), 0)
 })
 </script>
 
