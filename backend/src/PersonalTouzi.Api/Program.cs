@@ -17,9 +17,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// 配置 EF Core
+// 配置 EF Core (使用 SQLite)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite("Data Source=personaltouzi.db"));
 
 // 配置 CORS
 builder.Services.AddCors(options =>

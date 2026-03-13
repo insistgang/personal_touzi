@@ -42,7 +42,15 @@
       "Bash(find E:/personal_touzi/backend -type f -name \"*.cs\" 2>/dev/null | head -30)",
       "Bash(find E:/personal_touzi -name \"*.cs\" -newer E:/personal_touzi/README.md 2>/dev/null | head -20)",
       "Bash(find E:/personal_touzi/frontend/src -name \"*.vue\" -newer E:/personal_touzi/README.md 2>/dev/null | head -20)",
-      "Bash(cd E:/personal_touzi/frontend && npm run build 2>&1 | tail -20)"
+      "Bash(cd E:/personal_touzi/frontend && npm run build 2>&1 | tail -20)",
+      "Bash(sleep 8 && curl -s http://localhost:5000/api/accounts 2>/dev/null || echo \"API not ready yet\")",
+      "Bash(curl -s http://localhost:5297/api/accounts && echo \"\")",
+      "Bash(curl -s http://localhost:5297/swagger/index.html | head -5)",
+      "Bash(curl -s -X POST http://localhost:5297/api/ai/chat \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"message\":\"你好，请介绍一下你自己\"}' | head -200)",
+      "Bash(curl -s -X POST http://localhost:5297/api/ai/sentiment -H \"Content-Type: application/json\" -d '{\"codes\":[\"600519\",\"000001\"]}' 2>/dev/null)",
+      "Bash(curl -s -X POST http://localhost:5297/api/ai/sentiment \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"stockCodes\":[\"600519\",\"000001\"]}' 2>/dev/null)",
+      "Bash(which npm:*)",
+      "Bash(sleep 15 && curl -s http://localhost:5173 2>/dev/null | head -10 || echo \"Frontend not ready\")"
     ]
   }
 }
