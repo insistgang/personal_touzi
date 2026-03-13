@@ -38,8 +38,10 @@ export interface Position {
   id: number
   symbol: string
   name: string
+  type?: 'stock' | 'fund' | 'bond'
   quantity: number
   avgCost: number
+  costPrice: number
   currentPrice: number
   marketValue: number
   gainLoss: number
@@ -50,6 +52,7 @@ export interface Position {
 export interface Transaction {
   id: number
   symbol: string
+  name?: string
   type: 'buy' | 'sell'
   quantity: number
   price: number
@@ -101,9 +104,39 @@ export const apiPortfolio = {
     return api.get('/portfolio/positions', { params: { accountId } })
   },
 
+  // 创建持仓
+  createPosition: (position: Omit<Position, 'id'>): Promise<Position> => {
+    return api.post('/portfolio/positions', position)
+  },
+
+  // 更新持仓
+  updatePosition: (id: number, position: Partial<Position>): Promise<Position> => {
+    return api.put(`/portfolio/positions/${id}`, position)
+  },
+
+  // 删除持仓
+  deletePosition: (id: number): Promise<void> => {
+    return api.delete(`/portfolio/positions/${id}`)
+  },
+
   // 获取交易记录
   getTransactions: (params?: { accountId?: number; startDate?: string; endDate?: string }): Promise<Transaction[]> => {
     return api.get('/portfolio/transactions', { params })
+  },
+
+  // 创建交易
+  createTransaction: (transaction: Omit<Transaction, 'id'>): Promise<Transaction> => {
+    return api.post('/portfolio/transactions', transaction)
+  },
+
+  // 更新交易
+  updateTransaction: (id: number, transaction: Partial<Transaction>): Promise<Transaction> => {
+    return api.put(`/portfolio/transactions/${id}`, transaction)
+  },
+
+  // 删除交易
+  deleteTransaction: (id: number): Promise<void> => {
+    return api.delete(`/portfolio/transactions/${id}`)
   },
 
   // 获取账户列表
@@ -125,7 +158,10 @@ export const apiPortfolio = {
 // AI API 接口
 export const apiAI = {
   // AI 聊天
-  chat: (message: string) => api.post('/ai/chat', { message }),
+  chat: async (message: string): Promise<string> => {
+    const response = await api.post('/ai/chat', { message })
+    return response as unknown as string
+  },
 
   // 分析持仓
   analyzePortfolio: (accountId: number) => api.post(`/ai/analyze/${accountId}`),
@@ -134,7 +170,7 @@ export const apiAI = {
   generateReport: (accountId: number, type: string) => api.post(`/ai/report/${accountId}`, { type }),
 
   // 市场情绪分析
-  analyzeSentiment: (codes: string[]) => api.post('/ai/sentiment', { codes }),
+  analyzeSentiment: (codes: string[]) => api.post('/ai/sentiment', { stockCodes: codes }),
 
   // 收益预测
   predictRevenue: (accountId: number, days: number) => api.post(`/ai/predict/${accountId}`, { days })

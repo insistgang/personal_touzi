@@ -1,6 +1,11 @@
 <template>
   <div class="net-value-chart">
-    <v-chart class="chart" :option="chartOption" autoresize />
+    <div class="chart-header">
+      <h3>净值走势</h3>
+    </div>
+    <div class="chart-container">
+      <v-chart class="chart" :option="chartOption" autoresize />
+    </div>
   </div>
 </template>
 
@@ -40,9 +45,17 @@ const props = defineProps<Props>()
 const chartOption = computed(() => ({
   tooltip: {
     trigger: 'axis',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderColor: '#e0e0e0',
+    borderWidth: 1,
+    textStyle: { color: '#333' },
     formatter: (params: any) => {
       const param = params[0]
-      return `${param.name}<br/>净值: ¥${param.value.toFixed(2)}`
+      return `<div style="margin-bottom: 4px;">${param.name}</div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 10px; height: 10px; background: #667eea; border-radius: 50%;"></span>
+                <span>净值: ¥${param.value.toFixed(2)}</span>
+              </div>`
     }
   },
   grid: {
@@ -55,13 +68,17 @@ const chartOption = computed(() => ({
   xAxis: {
     type: 'category',
     data: props.data.map(d => d.date),
-    boundaryGap: false
+    boundaryGap: false,
+    axisLine: { lineStyle: { color: '#e0e0e0' } },
+    axisLabel: { color: '#999' }
   },
   yAxis: {
     type: 'value',
     axisLabel: {
-      formatter: '¥{value}'
-    }
+      formatter: '¥{value}',
+      color: '#999'
+    },
+    splitLine: { lineStyle: { color: '#f0f0f0' } }
   },
   series: [
     {
@@ -77,17 +94,17 @@ const chartOption = computed(() => ({
           x2: 0,
           y2: 1,
           colorStops: [
-            { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
-            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+            { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
+            { offset: 1, color: 'rgba(118, 75, 162, 0.05)' }
           ]
         }
       },
       lineStyle: {
-        color: '#409eff',
-        width: 2
+        color: '#667eea',
+        width: 3
       },
       itemStyle: {
-        color: '#409eff'
+        color: '#667eea'
       }
     }
   ]
@@ -97,7 +114,27 @@ const chartOption = computed(() => ({
 <style scoped>
 .net-value-chart {
   width: 100%;
-  height: 300px;
+  height: 100%;
+}
+
+.chart-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.chart-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.chart-container {
+  padding: 16px;
+  height: calc(100% - 55px);
 }
 
 .chart {

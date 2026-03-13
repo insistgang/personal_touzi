@@ -69,6 +69,98 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
+  // Position Actions
+  const addPosition = async (position: Omit<Position, 'id'>) => {
+    loading.value = true
+    error.value = null
+    try {
+      const newPosition = await apiPortfolio.createPosition(position)
+      positions.value.push(newPosition)
+    } catch (err: any) {
+      error.value = err.message || 'Failed to add position'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const updatePosition = async (id: number, position: Partial<Position>) => {
+    loading.value = true
+    error.value = null
+    try {
+      const updated = await apiPortfolio.updatePosition(id, position)
+      const index = positions.value.findIndex(p => p.id === id)
+      if (index !== -1) {
+        positions.value[index] = updated
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to update position'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const deletePosition = async (id: number) => {
+    loading.value = true
+    error.value = null
+    try {
+      await apiPortfolio.deletePosition(id)
+      positions.value = positions.value.filter(p => p.id !== id)
+    } catch (err: any) {
+      error.value = err.message || 'Failed to delete position'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Transaction Actions
+  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+    loading.value = true
+    error.value = null
+    try {
+      const newTransaction = await apiPortfolio.createTransaction(transaction)
+      transactions.value.unshift(newTransaction)
+    } catch (err: any) {
+      error.value = err.message || 'Failed to add transaction'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const updateTransaction = async (id: number, transaction: Partial<Transaction>) => {
+    loading.value = true
+    error.value = null
+    try {
+      const updated = await apiPortfolio.updateTransaction(id, transaction)
+      const index = transactions.value.findIndex(t => t.id === id)
+      if (index !== -1) {
+        transactions.value[index] = updated
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to update transaction'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const deleteTransaction = async (id: number) => {
+    loading.value = true
+    error.value = null
+    try {
+      await apiPortfolio.deleteTransaction(id)
+      transactions.value = transactions.value.filter(t => t.id !== id)
+    } catch (err: any) {
+      error.value = err.message || 'Failed to delete transaction'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // State
     dashboardData,
@@ -85,6 +177,12 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     fetchDashboard,
     fetchPositions,
     fetchTransactions,
-    fetchAccounts
+    fetchAccounts,
+    addPosition,
+    updatePosition,
+    deletePosition,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction
   }
 })

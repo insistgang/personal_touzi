@@ -50,7 +50,14 @@
       "Bash(curl -s -X POST http://localhost:5297/api/ai/sentiment -H \"Content-Type: application/json\" -d '{\"codes\":[\"600519\",\"000001\"]}' 2>/dev/null)",
       "Bash(curl -s -X POST http://localhost:5297/api/ai/sentiment \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"stockCodes\":[\"600519\",\"000001\"]}' 2>/dev/null)",
       "Bash(which npm:*)",
-      "Bash(sleep 15 && curl -s http://localhost:5173 2>/dev/null | head -10 || echo \"Frontend not ready\")"
+      "Bash(sleep 15 && curl -s http://localhost:5173 2>/dev/null | head -10 || echo \"Frontend not ready\")",
+      "Bash(curl -s http://localhost:5173 2>/dev/null | head -3 || echo \"前端未运行\")",
+      "Bash(curl -s http://localhost:5297/api/accounts 2>/dev/null || echo \"后端未运行\")",
+      "Bash(curl -s -X POST http://localhost:5297/api/ai/chat \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"message\":\"你好\"}' 2>/dev/null)",
+      "Bash(sleep 10 && curl -s http://localhost:5173 2>/dev/null | head -5)",
+      "Bash(sleep 8 && curl -s http://localhost:5297/api/accounts 2>/dev/null | head -100)",
+      "Bash(curl -s http://localhost:5297/api/positions 2>/dev/null)",
+      "Bash(curl -s http://localhost:5297/api/portfolio/dashboard 2>/dev/null)"
     ]
   }
 }
