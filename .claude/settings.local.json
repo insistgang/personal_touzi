@@ -39,7 +39,10 @@
       "Bash(cd E:/personal_touzi/backend && dotnet clean && dotnet build)",
       "Bash(rm -f E:/personal_touzi/backend/src/PersonalTouzi.Infrastructure/Services/CacheService.cs && rmdir E:/personal_touzi/backend/src/PersonalTouzi.Infrastructure/Services 2>/dev/null; dotnet build E:/personal_touzi/backend/PersonalTouzi.sln)",
       "Bash(dotnet build:*)",
-      "Bash(find E:/personal_touzi/backend -type f -name \"*.cs\" 2>/dev/null | head -30)"
+      "Bash(find E:/personal_touzi/backend -type f -name \"*.cs\" 2>/dev/null | head -30)",
+      "Bash(find E:/personal_touzi -name \"*.cs\" -newer E:/personal_touzi/README.md 2>/dev/null | head -20)",
+      "Bash(find E:/personal_touzi/frontend/src -name \"*.vue\" -newer E:/personal_touzi/README.md 2>/dev/null | head -20)",
+      "Bash(cd E:/personal_touzi/frontend && npm run build 2>&1 | tail -20)"
     ]
   }
 }

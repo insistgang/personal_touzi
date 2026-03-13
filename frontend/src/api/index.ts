@@ -121,3 +121,21 @@ export const apiPortfolio = {
     return api.get('/portfolio/net-value-trend', { params: { days } })
   }
 }
+
+// AI API 接口
+export const apiAI = {
+  // AI 聊天
+  chat: (message: string) => api.post('/ai/chat', { message }),
+
+  // 分析持仓
+  analyzePortfolio: (accountId: number) => api.post(`/ai/analyze/${accountId}`),
+
+  // 生成报告
+  generateReport: (accountId: number, type: string) => api.post(`/ai/report/${accountId}`, { type }),
+
+  // 市场情绪分析
+  analyzeSentiment: (codes: string[]) => api.post('/ai/sentiment', { codes }),
+
+  // 收益预测
+  predictRevenue: (accountId: number, days: number) => api.post(`/ai/predict/${accountId}`, { days })
+}

@@ -7,6 +7,7 @@
         <router-link to="/positions">持仓</router-link>
         <router-link to="/transactions">交易记录</router-link>
         <router-link to="/accounts">账户</router-link>
+        <router-link to="/ai">AI 分析</router-link>
       </div>
     </nav>
     <main class="main-content">

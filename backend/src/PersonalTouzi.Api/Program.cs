@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PersonalTouzi.Infrastructure.Data;
+using PersonalTouzi.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,11 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+
+// 配置 AI 服务
+builder.Services.Configure<GlmAIOptions>(
+    builder.Configuration.GetSection(GlmAIOptions.SectionName));
+builder.Services.AddHttpClient<IAIService, GlmAIService>();
 
 var app = builder.Build();
 
