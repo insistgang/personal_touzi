@@ -94,7 +94,7 @@
           <div class="card-content">
             <h3>持仓市值</h3>
             <p class="value">¥{{ formatAmount(dashboardData.positionsValue) }}</p>
-            <span class="trend neutral">{{ Object.keys(dashboardData.topPositions || {}).length }} 个持仓</span>
+            <span class="trend neutral">{{ dashboardData.topPositions?.length || 0 }} 个重点持仓</span>
           </div>
         </div>
       </div>

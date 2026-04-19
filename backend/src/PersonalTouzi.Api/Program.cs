@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PersonalTouzi.Api.Middleware;
 using PersonalTouzi.Core.Entities;
 using PersonalTouzi.Infrastructure.Data;
 using PersonalTouzi.Infrastructure.Services;
@@ -36,9 +37,15 @@ builder.Services.AddCors(options =>
 // 配置 AI 服务
 builder.Services.Configure<GlmAIOptions>(
     builder.Configuration.GetSection(GlmAIOptions.SectionName));
+builder.Services.AddScoped<IPortfolioService, PortfolioService>();
+builder.Services.AddScoped<IPortfolioImportService, PortfolioImportService>();
+builder.Services.AddScoped<ITransactionSettlementService, TransactionSettlementService>();
 builder.Services.AddHttpClient<IAIService, GlmAIService>();
 
 var app = builder.Build();
+
+// 全局异常处理（放在最前面）
+app.UseExceptionHandling();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -90,6 +97,10 @@ using (var scope = app.Services.CreateScope())
         );
         db.SaveChanges();
     }
+
+    var portfolioService = scope.ServiceProvider.GetRequiredService<IPortfolioService>();
+    await portfolioService.SeedHistoricalSnapshotsIfEmptyAsync();
+    await portfolioService.RefreshTodaySnapshotsAsync();
 }
 
 app.Run();

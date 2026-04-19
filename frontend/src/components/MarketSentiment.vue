@@ -272,7 +272,7 @@ const analyzeSentiment = async () => {
   try {
     const codes = props.codes || ['000001', '399001', '000300']
     const response = await apiAI.analyzeSentiment(codes)
-    sentimentData.value = response.data || response
+    sentimentData.value = response
   } catch (err: any) {
     console.error('Sentiment error:', err)
     error.value = err.response?.data?.message || '分析失败，请稍后重试'
@@ -280,6 +280,10 @@ const analyzeSentiment = async () => {
     loading.value = false
   }
 }
+
+defineExpose({
+  analyzeSentiment
+})
 </script>
 
 <style scoped>

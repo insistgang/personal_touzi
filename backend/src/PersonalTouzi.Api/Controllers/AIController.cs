@@ -52,6 +52,10 @@ public class AIController : ControllerBase
             var analysis = await _aiService.AnalyzePortfolioAsync(accountId);
             return Ok(analysis);
         }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = "账户不存在", message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "投资组合分析失败: AccountId={AccountId}", accountId);
@@ -66,7 +70,7 @@ public class AIController : ControllerBase
     /// <param name="request">报告生成请求</param>
     /// <returns>报告内容</returns>
     [HttpPost("report/{accountId}")]
-    public async Task<ActionResult<string>> GenerateReport(
+    public async Task<ActionResult<InvestmentReport>> GenerateReport(
         int accountId,
         [FromBody] ReportRequest? request = null)
     {
@@ -74,7 +78,11 @@ public class AIController : ControllerBase
         {
             var reportType = request?.ReportType ?? "weekly";
             var report = await _aiService.GenerateReportAsync(accountId, reportType);
-            return Ok(new { reportType, content = report });
+            return Ok(report);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = "账户不存在", message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -120,6 +128,10 @@ public class AIController : ControllerBase
             var days = request?.Days ?? 30;
             var prediction = await _aiService.PredictRevenueAsync(accountId, days);
             return Ok(prediction);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = "账户不存在", message = ex.Message });
         }
         catch (Exception ex)
         {

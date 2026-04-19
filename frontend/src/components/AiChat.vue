@@ -140,6 +140,11 @@ const clearHistory = () => {
   }]
 }
 
+defineExpose({
+  askQuestion: sendQuickQuestion,
+  clearHistory
+})
+
 onMounted(() => {
   clearHistory()
   scrollToBottom()

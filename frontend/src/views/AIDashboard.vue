@@ -22,11 +22,11 @@
       <div class="header-stats">
         <div class="stat-item">
           <span class="stat-label">AI 模型</span>
-          <span class="stat-value">GPT-4</span>
+          <span class="stat-value">GLM / 内置</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">分析精度</span>
-          <span class="stat-value">94.5%</span>
+          <span class="stat-label">运行模式</span>
+          <span class="stat-value">自动降级</span>
         </div>
       </div>
     </div>
@@ -46,7 +46,7 @@
             <span class="card-badge">在线</span>
           </div>
           <div class="card-body">
-            <AiChat />
+            <AiChat ref="aiChatRef" />
           </div>
         </div>
 
@@ -63,7 +63,7 @@
             <span class="card-badge neutral">实时</span>
           </div>
           <div class="card-body">
-            <MarketSentiment />
+            <MarketSentiment ref="sentimentRef" />
           </div>
         </div>
       </div>
@@ -82,7 +82,7 @@
             <span class="card-badge positive">+预测</span>
           </div>
           <div class="card-body">
-            <RevenuePrediction :account-id="currentAccountId" />
+            <RevenuePrediction ref="predictionRef" :account-id="currentAccountId" />
           </div>
         </div>
 
@@ -101,7 +101,7 @@
             <span class="card-badge">每日</span>
           </div>
           <div class="card-body">
-            <SmartReport :account-id="currentAccountId" />
+            <SmartReport ref="reportRef" :account-id="currentAccountId" />
           </div>
         </div>
 
@@ -119,27 +119,27 @@
           </div>
           <div class="card-body">
             <div class="action-buttons">
-              <button class="action-btn">
+              <button class="action-btn" @click="askAi('分析我的当前持仓结构和风险')">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                   <circle cx="12" cy="12" r="3"/>
                 </svg>
                 分析持仓
               </button>
-              <button class="action-btn">
+              <button class="action-btn" @click="runPrediction">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 20V10M18 20V4M6 20v-6"/>
                 </svg>
                 风险评估
               </button>
-              <button class="action-btn">
+              <button class="action-btn" @click="runSentiment">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/>
                   <polyline points="12 6 12 12 16 14"/>
                 </svg>
                 市场回顾
               </button>
-              <button class="action-btn">
+              <button class="action-btn" @click="runReport">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                 </svg>
@@ -162,6 +162,26 @@ import SmartReport from '@/components/SmartReport.vue'
 import MarketSentiment from '@/components/MarketSentiment.vue'
 
 const currentAccountId = ref<number>(1)
+const aiChatRef = ref<{ askQuestion: (question: string) => void } | null>(null)
+const predictionRef = ref<{ fetchPrediction: () => void } | null>(null)
+const reportRef = ref<{ generateReport: () => void } | null>(null)
+const sentimentRef = ref<{ analyzeSentiment: () => void } | null>(null)
+
+const askAi = (question: string) => {
+  aiChatRef.value?.askQuestion(question)
+}
+
+const runPrediction = () => {
+  predictionRef.value?.fetchPrediction()
+}
+
+const runReport = () => {
+  reportRef.value?.generateReport()
+}
+
+const runSentiment = () => {
+  sentimentRef.value?.analyzeSentiment()
+}
 
 onMounted(async () => {
   // 获取第一个账户ID

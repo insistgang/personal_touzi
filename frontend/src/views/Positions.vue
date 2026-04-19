@@ -3,15 +3,8 @@
     <div class="page-header">
       <div class="header-content">
         <h1>持仓管理</h1>
-        <p class="subtitle">管理和跟踪您的投资持仓</p>
+        <p class="subtitle">仓位由交易记录生成；本页只维护名称、类型和现价等展示信息。</p>
       </div>
-      <button class="btn-primary" @click="showAddForm = true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        添加持仓
-      </button>
     </div>
 
     <div v-if="loading" class="loading-container">
@@ -27,7 +20,10 @@
       <p>{{ error }}</p>
     </div>
     <div v-else class="positions-content">
-      <!-- 统计卡片 -->
+      <div class="notice-banner">
+        数量、成本和所属账户会直接影响资产统计，当前已经收口为只读。需要调仓时，请前往“交易记录”模块记账；首次建账请使用“数据导入”页面中的初始持仓导入流程。
+      </div>
+
       <div class="stats-cards">
         <div class="stat-card">
           <div class="stat-icon blue">
@@ -38,7 +34,7 @@
           </div>
           <div class="stat-content">
             <span class="stat-label">总持仓数</span>
-            <span class="stat-value">{{ positions?.length || 0 }}</span>
+            <span class="stat-value">{{ positions.length }}</span>
           </div>
         </div>
         <div class="stat-card">
@@ -65,13 +61,12 @@
         </div>
       </div>
 
-      <!-- 持仓表格 -->
       <div class="positions-table-card">
         <div class="table-header">
           <h3>持仓列表</h3>
           <div class="table-filters">
-            <input type="text" placeholder="搜索代码或名称..." class="search-input" v-model="searchQuery">
-            <select class="filter-select" v-model="filterType">
+            <input v-model="searchQuery" type="text" placeholder="搜索代码或名称..." class="search-input">
+            <select v-model="filterType" class="filter-select">
               <option value="all">全部类型</option>
               <option value="stock">股票</option>
               <option value="fund">基金</option>
@@ -86,13 +81,14 @@
                 <th>代码</th>
                 <th>名称</th>
                 <th>类型</th>
+                <th>账户</th>
                 <th>持仓数量</th>
                 <th>成本价</th>
                 <th>现价</th>
                 <th>市值</th>
                 <th>盈亏</th>
                 <th>盈亏比例</th>
-                <th>操作</th>
+                <th>维护</th>
               </tr>
             </thead>
             <tbody>
@@ -106,31 +102,24 @@
                     {{ getTypeName(position.type) }}
                   </span>
                 </td>
+                <td class="account-cell">{{ getAccountName(position.accountId) }}</td>
                 <td>{{ position.quantity }}</td>
                 <td>¥{{ position.costPrice.toFixed(2) }}</td>
                 <td>¥{{ position.currentPrice.toFixed(2) }}</td>
-                <td>¥{{ (position.quantity * position.currentPrice).toFixed(2) }}</td>
+                <td>¥{{ position.marketValue.toFixed(2) }}</td>
                 <td :class="getGainLossClass(position)">
-                  ¥{{ (position.quantity * (position.currentPrice - position.costPrice)).toFixed(2) }}
+                  ¥{{ position.gainLoss.toFixed(2) }}
                 </td>
                 <td :class="getGainLossClass(position)">
-                  {{ (((position.currentPrice - position.costPrice) / position.costPrice) * 100).toFixed(2) }}%
+                  {{ position.gainLossPercent.toFixed(2) }}%
                 </td>
-                <td>
-                  <div class="action-buttons">
-                    <button class="action-btn edit" @click="editPosition(position)" title="编辑">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                    </button>
-                    <button class="action-btn delete" @click="deletePosition(position.id)" title="删除">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                      </svg>
-                    </button>
-                  </div>
+                <td class="maintenance-cell">
+                  <button class="action-btn edit" @click="openEditModal(position)" title="维护名称、类型和现价">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -141,17 +130,16 @@
               <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
               <line x1="12" y1="22.08" x2="12" y2="12"/>
             </svg>
-            <p>暂无持仓数据</p>
+            <p>暂无持仓数据，先去“交易记录”里记一笔买入。</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 添加/编辑持仓弹窗 -->
-    <div v-if="showAddForm" class="modal-overlay" @click.self="showAddForm = false">
+    <div v-if="showEditForm" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <div class="modal-header">
-          <h3>{{ editingPosition ? '编辑持仓' : '添加持仓' }}</h3>
+          <h3>维护持仓展示信息</h3>
           <button class="close-btn" @click="closeModal">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -160,13 +148,28 @@
           </button>
         </div>
         <form @submit.prevent="savePosition" class="modal-body">
-          <div class="form-group">
-            <label>证券代码</label>
-            <input type="text" v-model="formData.symbol" placeholder="例如: 000001" required>
+          <div v-if="editingPosition" class="readonly-grid">
+            <div class="readonly-card">
+              <span class="readonly-label">证券代码</span>
+              <strong class="readonly-value">{{ editingPosition.symbol }}</strong>
+            </div>
+            <div class="readonly-card">
+              <span class="readonly-label">所属账户</span>
+              <strong class="readonly-value">{{ getAccountName(editingPosition.accountId) }}</strong>
+            </div>
+            <div class="readonly-card">
+              <span class="readonly-label">持仓数量</span>
+              <strong class="readonly-value">{{ editingPosition.quantity }}</strong>
+            </div>
+            <div class="readonly-card">
+              <span class="readonly-label">持仓成本</span>
+              <strong class="readonly-value">¥{{ editingPosition.costPrice.toFixed(2) }}</strong>
+            </div>
           </div>
+
           <div class="form-group">
             <label>证券名称</label>
-            <input type="text" v-model="formData.name" placeholder="例如: 平安银行" required>
+            <input v-model="formData.name" type="text" placeholder="例如: 平安银行" required>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -178,33 +181,18 @@
               </select>
             </div>
             <div class="form-group">
-              <label>持仓数量</label>
-              <input type="number" v-model.number="formData.quantity" min="0" step="100" required>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>成本价</label>
-              <input type="number" v-model.number="formData.costPrice" min="0" step="0.01" required>
-            </div>
-            <div class="form-group">
               <label>现价</label>
-              <input type="number" v-model.number="formData.currentPrice" min="0" step="0.01" required>
+              <input v-model.number="formData.currentPrice" type="number" min="0" step="0.01" required>
             </div>
           </div>
-          <div class="form-group">
-            <label>账户</label>
-            <select v-model.number="formData.accountId" required>
-              <option v-for="account in accounts" :key="account.id" :value="account.id">
-                {{ account.name }}
-              </option>
-            </select>
-          </div>
+
+          <p class="modal-note">
+            数量、成本和账户归属由交易记录维护，这里只用于修正展示信息和最新价格。
+          </p>
+
           <div class="modal-footer">
             <button type="button" class="btn-secondary" @click="closeModal">取消</button>
-            <button type="submit" class="btn-primary">
-              {{ editingPosition ? '保存' : '添加' }}
-            </button>
+            <button type="submit" class="btn-primary">保存维护信息</button>
           </div>
         </form>
       </div>
@@ -213,8 +201,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { usePortfolioStore } from '@/stores/portfolio'
+import type { Position } from '@/api'
 
 const portfolioStore = usePortfolioStore()
 
@@ -225,41 +214,33 @@ const accounts = computed(() => portfolioStore.accounts)
 
 const searchQuery = ref('')
 const filterType = ref('all')
-const showAddForm = ref(false)
-const editingPosition = ref<any>(null)
+const showEditForm = ref(false)
+const editingPosition = ref<Position | null>(null)
 
-const formData = ref<{
-  symbol: string
+interface PositionEditFormData {
   name: string
   type: 'stock' | 'fund' | 'bond'
-  quantity: number
-  costPrice: number
   currentPrice: number
-  accountId: number
-}>({
-  symbol: '',
+}
+
+const createEmptyForm = (): PositionEditFormData => ({
   name: '',
   type: 'stock',
-  quantity: 0,
-  costPrice: 0,
-  currentPrice: 0,
-  accountId: 1
+  currentPrice: 0
 })
 
-const profitablePositions = computed(() => {
-  return positions.value?.filter(p => p.currentPrice > p.costPrice).length || 0
-})
+const formData = ref<PositionEditFormData>(createEmptyForm())
 
-const losingPositions = computed(() => {
-  return positions.value?.filter(p => p.currentPrice < p.costPrice).length || 0
-})
+const profitablePositions = computed(() => positions.value.filter(position => position.gainLoss > 0).length)
+
+const losingPositions = computed(() => positions.value.filter(position => position.gainLoss < 0).length)
 
 const filteredPositions = computed(() => {
-  if (!positions.value) return []
-  return positions.value.filter(p => {
-    const matchesSearch = p.symbol.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                         p.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesType = filterType.value === 'all' || p.type === filterType.value
+  return positions.value.filter(position => {
+    const matchesSearch =
+      position.symbol.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      position.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchesType = filterType.value === 'all' || position.type === filterType.value
     return matchesSearch && matchesType
   })
 })
@@ -270,60 +251,46 @@ const getTypeName = (type?: string): string => {
     fund: '基金',
     bond: '债券'
   }
+
   return type ? (types[type] || type) : '未知'
 }
 
-const getGainLossClass = (position: any): string => {
-  const gainLoss = position.currentPrice - position.costPrice
-  return gainLoss >= 0 ? 'positive' : 'negative'
+const getAccountName = (accountId: number): string => {
+  return accounts.value.find(account => account.id === accountId)?.name ?? `账户 #${accountId}`
 }
 
-const editPosition = (position: any) => {
+const getGainLossClass = (position: Position): string => {
+  return position.gainLoss >= 0 ? 'positive' : 'negative'
+}
+
+const openEditModal = (position: Position) => {
   editingPosition.value = position
   formData.value = {
-    symbol: position.symbol,
     name: position.name,
-    type: position.type,
-    quantity: position.quantity,
-    costPrice: position.costPrice,
-    currentPrice: position.currentPrice,
-    accountId: position.accountId
+    type: position.type || 'stock',
+    currentPrice: position.currentPrice
   }
-  showAddForm.value = true
-}
-
-const deletePosition = async (id: number) => {
-  if (confirm('确定要删除这个持仓吗？')) {
-    await portfolioStore.deletePosition(id)
-  }
+  showEditForm.value = true
 }
 
 const savePosition = async () => {
-  if (editingPosition.value) {
-    await portfolioStore.updatePosition(editingPosition.value.id, formData.value)
-  } else {
-    await portfolioStore.addPosition(formData.value)
+  if (!editingPosition.value) {
+    return
   }
+
+  await portfolioStore.updatePosition(editingPosition.value.id, formData.value)
   closeModal()
 }
 
 const closeModal = () => {
-  showAddForm.value = false
+  showEditForm.value = false
   editingPosition.value = null
-  formData.value = {
-    symbol: '',
-    name: '',
-    type: 'stock',
-    quantity: 0,
-    costPrice: 0,
-    currentPrice: 0,
-    accountId: 1
-  }
+  formData.value = createEmptyForm()
 }
 
 onMounted(async () => {
   await portfolioStore.fetchAccounts()
-  portfolioStore.fetchPositions()
+  await portfolioStore.fetchPositions()
 })
 </script>
 
@@ -382,6 +349,16 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 20px;
   margin-bottom: 24px;
+}
+
+.notice-banner {
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(16, 185, 129, 0.08) 100%);
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .stat-card {
@@ -548,6 +525,11 @@ onMounted(async () => {
   color: #f093fb;
 }
 
+.account-cell {
+  color: #4b5563;
+  white-space: nowrap;
+}
+
 .positions-table td.positive {
   color: #10b981;
   font-weight: 600;
@@ -558,9 +540,8 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 8px;
+.maintenance-cell {
+  text-align: center;
 }
 
 .action-btn {
@@ -568,7 +549,7 @@ onMounted(async () => {
   height: 32px;
   border: none;
   border-radius: 8px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -584,15 +565,6 @@ onMounted(async () => {
   background: rgba(102, 126, 234, 0.2);
 }
 
-.action-btn.delete {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-.action-btn.delete:hover {
-  background: rgba(239, 68, 68, 0.2);
-}
-
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -604,7 +576,6 @@ onMounted(async () => {
   opacity: 0.5;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -620,7 +591,7 @@ onMounted(async () => {
   background: #fff;
   border-radius: 20px;
   width: 100%;
-  max-width: 500px;
+  max-width: 560px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: modalSlide 0.3s ease-out;
 }
@@ -630,6 +601,7 @@ onMounted(async () => {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -674,6 +646,32 @@ onMounted(async () => {
   padding: 24px;
 }
 
+.readonly-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.readonly-card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.readonly-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.readonly-value {
+  font-size: 15px;
+  color: #111827;
+}
+
 .form-group {
   margin-bottom: 20px;
 }
@@ -707,6 +705,13 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+.modal-note {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .modal-footer {
@@ -783,6 +788,7 @@ onMounted(async () => {
     width: 100%;
   }
 
+  .readonly-grid,
   .form-row {
     grid-template-columns: 1fr;
   }

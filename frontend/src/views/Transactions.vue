@@ -3,15 +3,19 @@
     <div class="page-header">
       <div class="header-content">
         <h1>交易记录</h1>
-        <p class="subtitle">查看和管理您的交易历史</p>
+        <p class="subtitle">通过交易入账来驱动账户现金和持仓数量的变化。</p>
       </div>
       <button class="btn-primary" @click="showAddForm = true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19"/>
           <line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        添加交易
+        记录交易
       </button>
+    </div>
+
+    <div class="notice-banner">
+      交易采用记账模式。新增交易会直接更新账户现金和持仓；已入账记录不支持直接编辑或删除，如需批量补录历史成交，请使用“数据导入”页面。
     </div>
 
     <div v-if="loading" class="loading-container">
@@ -27,7 +31,6 @@
       <p>{{ error }}</p>
     </div>
     <div v-else class="transactions-content">
-      <!-- 统计卡片 -->
       <div class="stats-cards">
         <div class="stat-card">
           <div class="stat-icon blue">
@@ -75,7 +78,6 @@
         </div>
       </div>
 
-      <!-- 交易表格 -->
       <div class="transactions-table-card">
         <div class="table-header">
           <h3>交易列表</h3>
@@ -106,7 +108,7 @@
                 <th>价格</th>
                 <th>金额</th>
                 <th>账户</th>
-                <th>操作</th>
+                <th>备注</th>
               </tr>
             </thead>
             <tbody>
@@ -131,22 +133,7 @@
                 <td>¥{{ txn.price.toFixed(2) }}</td>
                 <td class="amount-cell">¥{{ txn.amount.toFixed(2) }}</td>
                 <td>{{ getAccountName(txn.accountId) }}</td>
-                <td>
-                  <div class="action-buttons">
-                    <button class="action-btn edit" @click="editTransaction(txn)" title="编辑">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                    </button>
-                    <button class="action-btn delete" @click="deleteTransaction(txn.id)" title="删除">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
+                <td class="remark-cell">{{ txn.remark || '-' }}</td>
               </tr>
             </tbody>
           </table>
@@ -161,11 +148,10 @@
       </div>
     </div>
 
-    <!-- 添加/编辑交易弹窗 -->
     <div v-if="showAddForm" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <div class="modal-header">
-          <h3>{{ editingTransaction ? '编辑交易' : '添加交易' }}</h3>
+          <h3>记录交易</h3>
           <button class="close-btn" @click="closeModal">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -183,8 +169,26 @@
               </select>
             </div>
             <div class="form-group">
+              <label>资产类型</label>
+              <select v-model="formData.assetType">
+                <option value="stock">股票</option>
+                <option value="fund">基金</option>
+                <option value="bond">债券</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
               <label>交易日期</label>
               <input type="date" v-model="formData.tradeDate" required>
+            </div>
+            <div class="form-group">
+              <label>账户</label>
+              <select v-model.number="formData.accountId" required>
+                <option v-for="account in accounts" :key="account.id" :value="account.id">
+                  {{ account.name }}
+                </option>
+              </select>
             </div>
           </div>
           <div class="form-row">
@@ -200,7 +204,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>数量</label>
-              <input type="number" v-model.number="formData.quantity" min="1" step="100" required>
+              <input type="number" v-model.number="formData.quantity" min="1" step="1" required>
             </div>
             <div class="form-group">
               <label>价格</label>
@@ -208,12 +212,8 @@
             </div>
           </div>
           <div class="form-group">
-            <label>账户</label>
-            <select v-model.number="formData.accountId" required>
-              <option v-for="account in accounts" :key="account.id" :value="account.id">
-                {{ account.name }}
-              </option>
-            </select>
+            <label>备注</label>
+            <input type="text" v-model="formData.remark" placeholder="可选：记录交易原因、策略标签等">
           </div>
           <div class="amount-summary">
             <span class="summary-label">交易金额:</span>
@@ -221,9 +221,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn-secondary" @click="closeModal">取消</button>
-            <button type="submit" class="btn-primary">
-              {{ editingTransaction ? '保存' : '添加' }}
-            </button>
+            <button type="submit" class="btn-primary">提交入账</button>
           </div>
         </form>
       </div>
@@ -232,8 +230,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { usePortfolioStore } from '@/stores/portfolio'
+import type { TransactionPayload } from '@/api'
 
 const portfolioStore = usePortfolioStore()
 
@@ -246,116 +245,62 @@ const searchQuery = ref('')
 const filterType = ref('all')
 const selectedAccount = ref('all')
 const showAddForm = ref(false)
-const editingTransaction = ref<any>(null)
 
-const formData = ref<{
-  type: 'buy' | 'sell'
-  tradeDate: string
-  symbol: string
-  name: string
-  quantity: number
-  price: number
-  accountId: number
-}>({
+const createEmptyForm = (): TransactionPayload => ({
   type: 'buy',
+  assetType: 'stock',
   tradeDate: new Date().toISOString().split('T')[0] || '',
   symbol: '',
   name: '',
   quantity: 100,
   price: 0,
-  accountId: 1
+  accountId: accounts.value[0]?.id ?? 1,
+  remark: ''
 })
 
-const buyCount = computed(() => {
-  return transactions.value?.filter(t => t.type === 'buy').length || 0
-})
+const formData = ref<TransactionPayload>(createEmptyForm())
 
-const sellCount = computed(() => {
-  return transactions.value?.filter(t => t.type === 'sell').length || 0
-})
-
-const totalAmount = computed(() => {
-  return transactions.value?.reduce((sum, t) => sum + t.amount, 0) || 0
-})
-
-const calculatedAmount = computed(() => {
-  return (formData.value.quantity || 0) * (formData.value.price || 0)
-})
+const buyCount = computed(() => transactions.value?.filter(transaction => transaction.type === 'buy').length || 0)
+const sellCount = computed(() => transactions.value?.filter(transaction => transaction.type === 'sell').length || 0)
+const totalAmount = computed(() => transactions.value?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0)
+const calculatedAmount = computed(() => (formData.value.quantity || 0) * (formData.value.price || 0))
 
 const filteredTransactions = computed(() => {
-  if (!transactions.value) return []
-  return transactions.value.filter(t => {
-    const matchesSearch = t.symbol.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesType = filterType.value === 'all' || t.type === filterType.value
-    const matchesAccount = selectedAccount.value === 'all' || t.accountId === Number(selectedAccount.value)
+  return transactions.value.filter(transaction => {
+    const matchesSearch =
+      transaction.symbol.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      transaction.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchesType = filterType.value === 'all' || transaction.type === filterType.value
+    const matchesAccount = selectedAccount.value === 'all' || transaction.accountId === Number(selectedAccount.value)
+
     return matchesSearch && matchesType && matchesAccount
   })
 })
 
-const formatDate = (date: string): string => {
-  return new Date(date).toLocaleDateString('zh-CN')
-}
+const formatDate = (date: string) => new Date(date).toLocaleDateString('zh-CN')
+const formatAmount = (value: number) => value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-const formatAmount = (value: number): string => {
-  return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-const getAccountName = (accountId: number): string => {
-  const account = accounts.value.find((a: any) => a.id === accountId)
+const getAccountName = (accountId: number) => {
+  const account = accounts.value.find(item => item.id === accountId)
   return account?.name || `账户 ${accountId}`
 }
 
-const editTransaction = (txn: any) => {
-  editingTransaction.value = txn
-  formData.value = {
-    type: txn.type,
-    tradeDate: txn.tradeDate.split('T')[0],
-    symbol: txn.symbol,
-    name: txn.name || '',
-    quantity: txn.quantity,
-    price: txn.price,
-    accountId: txn.accountId
-  }
-  showAddForm.value = true
-}
-
-const deleteTransaction = async (id: number) => {
-  if (confirm('确定要删除这条交易记录吗？')) {
-    await portfolioStore.deleteTransaction(id)
-  }
-}
-
 const saveTransaction = async () => {
-  const transactionData = {
-    ...formData.value,
-    amount: calculatedAmount.value
-  }
-
-  if (editingTransaction.value) {
-    await portfolioStore.updateTransaction(editingTransaction.value.id, transactionData)
-  } else {
-    await portfolioStore.addTransaction(transactionData)
-  }
+  await portfolioStore.addTransaction(formData.value)
   closeModal()
 }
 
 const closeModal = () => {
   showAddForm.value = false
-  editingTransaction.value = null
-  formData.value = {
-    type: 'buy',
-    tradeDate: new Date().toISOString().split('T')[0] || '',
-    symbol: '',
-    name: '',
-    quantity: 100,
-    price: 0,
-    accountId: 1
-  }
+  formData.value = createEmptyForm()
 }
 
 onMounted(async () => {
   await portfolioStore.fetchAccounts()
-  portfolioStore.fetchTransactions()
+  if (accounts.value.length > 0) {
+    formData.value.accountId = accounts.value[0]?.id ?? 1
+  }
+  await portfolioStore.fetchTransactions()
 })
 </script>
 
@@ -370,7 +315,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 20px;
 }
@@ -386,6 +331,16 @@ onMounted(async () => {
   margin: 0;
   color: #6b7280;
   font-size: 14px;
+}
+
+.notice-banner {
+  margin-bottom: 24px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.08) 100%);
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .btn-primary {
@@ -592,39 +547,9 @@ onMounted(async () => {
   color: #1a1a2e;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.action-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.action-btn.edit {
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
-}
-
-.action-btn.edit:hover {
-  background: rgba(102, 126, 234, 0.2);
-}
-
-.action-btn.delete {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-.action-btn.delete:hover {
-  background: rgba(239, 68, 68, 0.2);
+.remark-cell {
+  max-width: 220px;
+  color: #6b7280;
 }
 
 .empty-state {
@@ -638,7 +563,6 @@ onMounted(async () => {
   opacity: 0.5;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -654,7 +578,7 @@ onMounted(async () => {
   background: #fff;
   border-radius: 20px;
   width: 100%;
-  max-width: 500px;
+  max-width: 560px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: modalSlide 0.3s ease-out;
 }

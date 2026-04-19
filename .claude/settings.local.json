@@ -57,7 +57,13 @@
       "Bash(sleep 10 && curl -s http://localhost:5173 2>/dev/null | head -5)",
       "Bash(sleep 8 && curl -s http://localhost:5297/api/accounts 2>/dev/null | head -100)",
       "Bash(curl -s http://localhost:5297/api/positions 2>/dev/null)",
-      "Bash(curl -s http://localhost:5297/api/portfolio/dashboard 2>/dev/null)"
+      "Bash(curl -s http://localhost:5297/api/portfolio/dashboard 2>/dev/null)",
+      "Bash(sleep 10 && echo \"=== 后端状态 ===\" && curl -s http://localhost:5297/api/accounts 2>/dev/null | head -100 && echo \"\" && echo \"=== 前端状态 ===\" && curl -s http://localhost:5173 2>/dev/null | head -5)",
+      "Bash(taskkill //F //IM dotnet.exe 2>/dev/null; taskkill //F //IM node.exe 2>/dev/null; sleep 2)",
+      "Bash(cd E:/personal_touzi/frontend && npm run build 2>&1 | head -30)",
+      "Bash(cd E:/personal_touzi/frontend && \"/c/Program Files/nodejs/npm\" run build 2>&1 | head -50)",
+      "Bash(powershell -Command \"cd E:\\\\personal_touzi\\\\frontend; npm run build\" 2>&1 | head -50)",
+      "Bash(powershell -Command \"cd E:\\\\personal_touzi\\\\frontend; npm run build\" 2>&1 | head -30)"
     ]
   }
 }

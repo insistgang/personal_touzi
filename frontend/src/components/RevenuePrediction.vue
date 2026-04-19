@@ -215,28 +215,6 @@ const chartOption = computed(() => {
     },
     series: [
       {
-        name: '置信区间',
-        type: 'line',
-        data: predictionData.value.upperBounds.map((up, i) => [(predictionData.value?.lowerBounds[i] || 0), up]),
-        lineStyle: { opacity: 0 },
-        itemStyle: { opacity: 0 },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(102, 126, 234, 0.2)' },
-              { offset: 1, color: 'rgba(118, 75, 162, 0.05)' }
-            ]
-          }
-        },
-        stack: 'confidence',
-        z: 1
-      },
-      {
         name: '上限',
         type: 'line',
         data: predictionData.value.upperBounds,
@@ -261,19 +239,6 @@ const chartOption = computed(() => {
         smooth: true,
         lineStyle: { color: '#667eea', width: 3 },
         itemStyle: { color: '#667eea' },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
-              { offset: 1, color: 'rgba(102, 126, 234, 0.02)' }
-            ]
-          }
-        },
         z: 3
       }
     ]
@@ -290,7 +255,7 @@ const fetchPrediction = async () => {
 
   try {
     const response = await apiAI.predictRevenue(props.accountId || 1, selectedDays.value)
-    predictionData.value = response.data || response
+    predictionData.value = response
   } catch (err: any) {
     console.error('Prediction error:', err)
     error.value = err.response?.data?.message || '获取预测数据失败'
@@ -298,6 +263,10 @@ const fetchPrediction = async () => {
     loading.value = false
   }
 }
+
+defineExpose({
+  fetchPrediction
+})
 
 onMounted(() => {
   fetchPrediction()

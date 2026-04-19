@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PersonalTouzi.Api.Models;
 using PersonalTouzi.Core.Entities;
 using PersonalTouzi.Infrastructure.Data;
+using PersonalTouzi.Infrastructure.Services;
 
 namespace PersonalTouzi.Api.Controllers;
 
@@ -9,11 +11,22 @@ namespace PersonalTouzi.Api.Controllers;
 [Route("api/portfolio/[controller]")]
 public class PositionsController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private const string ManualPositionCreateError =
+        "持仓数量和成本已由交易记录驱动，当前不支持直接新增持仓。请通过交易记录入账；初始持仓导入将作为独立流程提供。";
 
-    public PositionsController(ApplicationDbContext context)
+    private const string ManualPositionDeleteError =
+        "当前不支持直接删除持仓。请通过新增卖出交易或反向交易，将仓位调整到目标数量。";
+
+    private const string PositionReadOnlyFieldsError =
+        "当前只允许更新持仓名称、类型和现价。数量、成本、代码和所属账户需通过交易记录或后续导入流程维护。";
+
+    private readonly ApplicationDbContext _context;
+    private readonly IPortfolioService _portfolioService;
+
+    public PositionsController(ApplicationDbContext context, IPortfolioService portfolioService)
     {
         _context = context;
+        _portfolioService = portfolioService;
     }
 
     [HttpGet]
@@ -41,53 +54,52 @@ public class PositionsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<object>> CreatePosition([FromBody] PositionDto dto)
+    public ActionResult<object> CreatePosition([FromBody] CreatePositionRequest request)
     {
-        var position = new Position
+        if (!ModelState.IsValid)
         {
-            Code = dto.Symbol,
-            Name = dto.Name,
-            Type = dto.Type ?? "stock",
-            Quantity = dto.Quantity,
-            CostPrice = dto.CostPrice,
-            CurrentPrice = dto.CurrentPrice,
-            AccountId = dto.AccountId
-        };
+            return BadRequest(ModelState);
+        }
 
-        _context.Positions.Add(position);
-        await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetPosition), new { id = position.Id }, MapToDto(position));
+        return BadRequest(new { error = ManualPositionCreateError });
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdatePosition(int id, [FromBody] PositionDto dto)
+    public async Task<IActionResult> UpdatePosition(
+        int id,
+        [FromBody] UpdatePositionRequest request,
+        CancellationToken cancellationToken)
     {
-        var position = await _context.Positions.FindAsync(id);
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var position = await _context.Positions.FindAsync([id], cancellationToken);
         if (position == null) return NotFound();
 
-        position.Code = dto.Symbol;
-        position.Name = dto.Name;
-        position.Type = dto.Type ?? position.Type;
-        position.Quantity = dto.Quantity;
-        position.CostPrice = dto.CostPrice;
-        position.CurrentPrice = dto.CurrentPrice;
-        position.AccountId = dto.AccountId;
+        if (request.Symbol is not null
+            || request.Quantity.HasValue
+            || request.CostPrice.HasValue
+            || request.AccountId.HasValue)
+        {
+            return BadRequest(new { error = PositionReadOnlyFieldsError });
+        }
+
+        if (request.Name != null) position.Name = request.Name;
+        if (request.Type != null) position.Type = request.Type;
+        if (request.CurrentPrice.HasValue) position.CurrentPrice = request.CurrentPrice.Value;
         position.UpdatedAt = DateTime.Now;
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
+        await _portfolioService.RefreshTodaySnapshotsAsync(cancellationToken);
         return Ok(MapToDto(position));
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeletePosition(int id)
+    public IActionResult DeletePosition(int id)
     {
-        var position = await _context.Positions.FindAsync(id);
-        if (position == null) return NotFound();
-
-        _context.Positions.Remove(position);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        return BadRequest(new { error = ManualPositionDeleteError });
     }
 
     private static object MapToDto(Position p) => new
@@ -106,13 +118,3 @@ public class PositionsController : ControllerBase
         accountId = p.AccountId
     };
 }
-
-public record PositionDto(
-    string Symbol,
-    string Name,
-    string? Type,
-    decimal Quantity,
-    decimal CostPrice,
-    decimal CurrentPrice,
-    int AccountId
-);

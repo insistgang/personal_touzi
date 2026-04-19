@@ -9,22 +9,13 @@ const api: AxiosInstance = axios.create({
   }
 })
 
-// 请求拦截器
 api.interceptors.request.use(
-  (config) => {
-    // 可以在这里添加 token
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (config) => config,
+  (error) => Promise.reject(error)
 )
 
-// 响应拦截器
 api.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response.data
-  },
+  (response: AxiosResponse) => response.data,
   (error) => {
     console.error('API Error:', error)
     return Promise.reject(error)
@@ -33,32 +24,60 @@ api.interceptors.response.use(
 
 export default api
 
-// API 接口定义
 export interface Position {
   id: number
   symbol: string
   name: string
-  type?: 'stock' | 'fund' | 'bond'
+  type: 'stock' | 'fund' | 'bond'
   quantity: number
-  avgCost?: number
+  avgCost: number
   costPrice: number
   currentPrice: number
-  marketValue?: number
-  gainLoss?: number
-  gainLossPercent?: number
+  marketValue: number
+  gainLoss: number
+  gainLossPercent: number
   accountId: number
+}
+
+export interface PositionPayload {
+  symbol: string
+  name: string
+  type: 'stock' | 'fund' | 'bond'
+  quantity: number
+  costPrice: number
+  currentPrice: number
+  accountId: number
+}
+
+export interface PositionUpdatePayload {
+  name?: string
+  type?: 'stock' | 'fund' | 'bond'
+  currentPrice?: number
 }
 
 export interface Transaction {
   id: number
   symbol: string
-  name?: string
+  name: string
   type: 'buy' | 'sell'
   quantity: number
   price: number
   amount: number
   tradeDate: string
   accountId: number
+  remark?: string
+}
+
+export interface TransactionPayload {
+  symbol: string
+  name: string
+  assetType?: 'stock' | 'fund' | 'bond'
+  type: 'buy' | 'sell'
+  quantity: number
+  price: number
+  tradeDate: string
+  accountId: number
+  remark?: string
 }
 
 export interface Account {
@@ -67,10 +86,21 @@ export interface Account {
   broker: string
   type: string
   balance: number
+  positionsValue: number
+  totalAssets: number
+  gainLoss: number
+  gainLossPercent: number
+  positionCount: number
+  createdAt: string
+}
+
+export interface AccountPayload {
+  name: string
+  broker: string
+  balance: number
 }
 
 export interface AssetSnapshot {
-  id: number
   date: string
   totalAssets: number
   netValue: number
@@ -78,6 +108,27 @@ export interface AssetSnapshot {
   positionsValue: number
   gainLoss: number
   gainLossPercent: number
+}
+
+export interface CsvImportPayload {
+  accountId: number
+  csvContent: string
+  hasHeader: boolean
+}
+
+export interface InitialPositionImportResult {
+  accountId: number
+  importedCount: number
+  totalCostBasis: number
+  totalMarketValue: number
+}
+
+export interface TransactionImportResult {
+  accountId: number
+  importedCount: number
+  buyCount: number
+  sellCount: number
+  totalAmount: number
 }
 
 export interface DashboardData {
@@ -92,86 +143,160 @@ export interface DashboardData {
   topPositions: Position[]
 }
 
-// API 方法
-export const apiPortfolio = {
-  // 获取仪表盘数据
-  getDashboard: (): Promise<DashboardData> => {
-    return api.get('/portfolio/dashboard')
-  },
+export interface PortfolioAnalysis {
+  riskLevel: number
+  riskAssessment: string
+  suggestions: string[]
+  summary: string
+}
 
-  // 获取持仓列表
-  getPositions: (accountId?: number): Promise<Position[]> => {
-    return api.get('/portfolio/positions', { params: { accountId } })
-  },
+export interface SentimentFactor {
+  name: string
+  impact: number
+  description: string
+}
 
-  // 创建持仓
-  createPosition: (position: Omit<Position, 'id'>): Promise<Position> => {
-    return api.post('/portfolio/positions', position)
-  },
+export interface MarketSentimentData {
+  overall: 'bullish' | 'neutral' | 'bearish'
+  score: number
+  bullish: number
+  neutral: number
+  bearish: number
+  factors: SentimentFactor[]
+  advices: string[]
+  recommendation: string
+}
 
-  // 更新持仓
-  updatePosition: (id: number, position: Partial<Position>): Promise<Position> => {
-    return api.put(`/portfolio/positions/${id}`, position)
-  },
+export interface RevenuePredictionData {
+  dates: string[]
+  predictedValues: number[]
+  lowerBounds: number[]
+  upperBounds: number[]
+  expectedReturn: number
+  lowerBound: number
+  upperBound: number
+  confidenceLevel: number
+  warnings: string[]
+  analysis: string
+}
 
-  // 删除持仓
-  deletePosition: (id: number): Promise<void> => {
-    return api.delete(`/portfolio/positions/${id}`)
-  },
+export interface InvestmentReport {
+  generateTime: string
+  period: string
+  totalReturn: number
+  totalAmount: number
+  benchmarkReturn: number
+  excessReturn: number
+  positionValue: number
+  positionCount: number
+  concentration: number
+  tradeCount: number
+  tradeAmount: number
+  winRate: number
+  profitLossRatio: number
+  risks: string[]
+  suggestions: string[]
+  content: string
+}
 
-  // 获取交易记录
-  getTransactions: (params?: { accountId?: number; startDate?: string; endDate?: string }): Promise<Transaction[]> => {
-    return api.get('/portfolio/transactions', { params })
-  },
+const toAccountRequest = (account: AccountPayload) => ({
+  name: account.name,
+  description: account.broker,
+  initialCash: account.balance
+})
 
-  // 创建交易
-  createTransaction: (transaction: Omit<Transaction, 'id'>): Promise<Transaction> => {
-    return api.post('/portfolio/transactions', transaction)
-  },
-
-  // 更新交易
-  updateTransaction: (id: number, transaction: Partial<Transaction>): Promise<Transaction> => {
-    return api.put(`/portfolio/transactions/${id}`, transaction)
-  },
-
-  // 删除交易
-  deleteTransaction: (id: number): Promise<void> => {
-    return api.delete(`/portfolio/transactions/${id}`)
-  },
-
-  // 获取账户列表
-  getAccounts: (): Promise<Account[]> => {
-    return api.get('/portfolio/accounts')
-  },
-
-  // 获取资产快照
-  getSnapshots: (startDate?: string, endDate?: string): Promise<AssetSnapshot[]> => {
-    return api.get('/portfolio/snapshots', { params: { startDate, endDate } })
-  },
-
-  // 获取净值走势
-  getNetValueTrend: (days: number = 30): Promise<Array<{ date: string; value: number }>> => {
-    return api.get('/portfolio/net-value-trend', { params: { days } })
+const normalizeReportType = (type: string) => {
+  switch (type) {
+    case 'month':
+    case 'monthly':
+      return 'monthly'
+    case 'quarter':
+    case 'quarterly':
+      return 'quarterly'
+    case 'year':
+    case 'yearly':
+      return 'yearly'
+    default:
+      return 'weekly'
   }
 }
 
-// AI API 接口
-export const apiAI = {
-  // AI 聊天
-  chat: async (message: string): Promise<string> => {
-    const response = await api.post('/ai/chat', { message })
-    return response as unknown as string
+export const apiPortfolio = {
+  getDashboard: (): Promise<DashboardData> => api.get('/portfolio/dashboard'),
+
+  getPositions: (accountId?: number): Promise<Position[]> => {
+    if (accountId) {
+      return api.get(`/portfolio/positions/by-account/${accountId}`)
+    }
+    return api.get('/portfolio/positions')
   },
 
-  // 分析持仓
-  analyzePortfolio: (accountId: number) => api.post(`/ai/analyze/${accountId}`),
+  createPosition: (position: PositionPayload): Promise<Position> =>
+    api.post('/portfolio/positions', position),
 
-  // 生成报告
-  generateReport: (accountId: number, type: string) => api.post(`/ai/report/${accountId}`, { type }),
+  updatePosition: (id: number, position: PositionUpdatePayload): Promise<Position> =>
+    api.put(`/portfolio/positions/${id}`, position),
 
-  // 市场情绪分析
-  analyzeSentiment: (codes: string[]) => api.post('/ai/sentiment', { stockCodes: codes }),
+  deletePosition: (id: number): Promise<void> =>
+    api.delete(`/portfolio/positions/${id}`),
 
-  // 收益预测
-  predictRevenue: (accountId: number, days: number) => api.post(`/ai/predict/${accountId}`, { days })
+  getTransactions: (params?: { accountId?: number }): Promise<Transaction[]> => {
+    if (params?.accountId) {
+      return api.get(`/portfolio/transactions/by-account/${params.accountId}`)
+    }
+    return api.get('/portfolio/transactions')
+  },
+
+  createTransaction: (transaction: TransactionPayload): Promise<Transaction> =>
+    api.post('/portfolio/transactions', transaction),
+
+  updateTransaction: (id: number, transaction: Partial<TransactionPayload>): Promise<Transaction> =>
+    api.put(`/portfolio/transactions/${id}`, transaction),
+
+  deleteTransaction: (id: number): Promise<void> =>
+    api.delete(`/portfolio/transactions/${id}`),
+
+  getAccounts: (): Promise<Account[]> =>
+    api.get('/portfolio/accounts'),
+
+  getAccount: (id: number): Promise<Account> =>
+    api.get(`/portfolio/accounts/${id}`),
+
+  createAccount: (account: AccountPayload): Promise<Account> =>
+    api.post('/portfolio/accounts', toAccountRequest(account)),
+
+  updateAccount: (id: number, account: AccountPayload): Promise<Account> =>
+    api.put(`/portfolio/accounts/${id}`, toAccountRequest(account)),
+
+  deleteAccount: (id: number): Promise<void> =>
+    api.delete(`/portfolio/accounts/${id}`),
+
+  getSnapshots: (startDate?: string, endDate?: string): Promise<AssetSnapshot[]> =>
+    api.get('/portfolio/snapshots', { params: { startDate, endDate } }),
+
+  getNetValueTrend: (days = 30): Promise<Array<{ date: string; value: number }>> =>
+    api.get('/portfolio/net-value-trend', { params: { days } }),
+
+  importInitialPositions: (payload: CsvImportPayload): Promise<InitialPositionImportResult> =>
+    api.post('/portfolio/imports/initial-positions', payload),
+
+  importTransactions: (payload: CsvImportPayload): Promise<TransactionImportResult> =>
+    api.post('/portfolio/imports/transactions', payload)
+}
+
+export const apiAI = {
+  chat: (message: string): Promise<string> =>
+    api.post('/ai/chat', { message }),
+
+  analyzePortfolio: (accountId: number): Promise<PortfolioAnalysis> =>
+    api.post(`/ai/analyze/${accountId}`),
+
+  generateReport: (accountId: number, type: string): Promise<InvestmentReport> =>
+    api.post(`/ai/report/${accountId}`, { reportType: normalizeReportType(type) }),
+
+  analyzeSentiment: (codes: string[]): Promise<MarketSentimentData> =>
+    api.post('/ai/sentiment', { stockCodes: codes }),
+
+  predictRevenue: (accountId: number, days: number): Promise<RevenuePredictionData> =>
+    api.post(`/ai/predict/${accountId}`, { days })
 }

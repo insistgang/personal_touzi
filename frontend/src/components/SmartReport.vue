@@ -267,7 +267,7 @@ const generateReport = async () => {
 
   try {
     const response = await apiAI.generateReport(props.accountId || 1, reportType.value)
-    reportData.value = response.data || response
+    reportData.value = response
   } catch (err: any) {
     console.error('Report error:', err)
     error.value = err.response?.data?.message || '生成报告失败'
@@ -323,6 +323,10 @@ ${reportData.value.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}
   a.click()
   URL.revokeObjectURL(url)
 }
+
+defineExpose({
+  generateReport
+})
 </script>
 
 <style scoped>

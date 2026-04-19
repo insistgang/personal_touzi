@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PersonalTouzi.Api.Models;
 using PersonalTouzi.Core.Entities;
 using PersonalTouzi.Infrastructure.Data;
+using PersonalTouzi.Infrastructure.Services;
 
 namespace PersonalTouzi.Api.Controllers;
 
@@ -10,10 +12,17 @@ namespace PersonalTouzi.Api.Controllers;
 public class TransactionsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IPortfolioService _portfolioService;
+    private readonly ITransactionSettlementService _transactionSettlementService;
 
-    public TransactionsController(ApplicationDbContext context)
+    public TransactionsController(
+        ApplicationDbContext context,
+        IPortfolioService portfolioService,
+        ITransactionSettlementService transactionSettlementService)
     {
         _context = context;
+        _portfolioService = portfolioService;
+        _transactionSettlementService = transactionSettlementService;
     }
 
     [HttpGet]
@@ -44,52 +53,69 @@ public class TransactionsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<object>> CreateTransaction([FromBody] TransactionDto dto)
+    public async Task<ActionResult<object>> CreateTransaction(
+        [FromBody] CreateTransactionRequest request,
+        CancellationToken cancellationToken)
     {
-        var transaction = new Transaction
+        if (!ModelState.IsValid)
         {
-            Code = dto.Symbol,
-            Name = dto.Name ?? "",
-            Type = dto.Type,
-            Quantity = dto.Quantity,
-            Price = dto.Price,
-            TransactionDate = DateTime.Parse(dto.TradeDate),
-            AccountId = dto.AccountId
-        };
+            return BadRequest(ModelState);
+        }
+        
+        try
+        {
+            var transaction = await _transactionSettlementService.RecordTransactionAsync(
+                new RecordTransactionCommand(
+                    AccountId: request.AccountId,
+                    Symbol: request.Symbol,
+                    Name: request.Name,
+                    Type: request.Type,
+                    Quantity: request.Quantity,
+                    Price: request.Price,
+                    TradeDate: request.TradeDate,
+                    Remark: request.Remark,
+                    AssetType: request.AssetType),
+                cancellationToken);
 
-        _context.Transactions.Add(transaction);
-        await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetTransaction), new { id = transaction.Id }, MapToDto(transaction));
+            await _portfolioService.RefreshTodaySnapshotsAsync(cancellationToken);
+            return CreatedAtAction(nameof(GetTransaction), new { id = transaction.Id }, MapToDto(transaction));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = "指定的账户不存在", message = ex.Message });
+        }
+        catch (PortfolioRuleException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateTransaction(int id, [FromBody] TransactionDto dto)
+    public IActionResult UpdateTransaction(
+        int id,
+        [FromBody] UpdateTransactionRequest request,
+        CancellationToken cancellationToken)
     {
-        var transaction = await _context.Transactions.FindAsync(id);
-        if (transaction == null) return NotFound();
+        _ = id;
+        _ = request;
+        _ = cancellationToken;
 
-        transaction.Code = dto.Symbol;
-        transaction.Name = dto.Name ?? "";
-        transaction.Type = dto.Type;
-        transaction.Quantity = dto.Quantity;
-        transaction.Price = dto.Price;
-        transaction.TransactionDate = DateTime.Parse(dto.TradeDate);
-        transaction.AccountId = dto.AccountId;
-
-        await _context.SaveChangesAsync();
-        return Ok(MapToDto(transaction));
+        return BadRequest(new
+        {
+            error = "交易记账后不支持直接修改。请新增一笔反向交易或手动调整持仓作为修正。"
+        });
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteTransaction(int id)
+    public IActionResult DeleteTransaction(int id, CancellationToken cancellationToken)
     {
-        var transaction = await _context.Transactions.FindAsync(id);
-        if (transaction == null) return NotFound();
+        _ = id;
+        _ = cancellationToken;
 
-        _context.Transactions.Remove(transaction);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        return BadRequest(new
+        {
+            error = "交易记账后不支持直接删除。请新增一笔反向交易来冲销原始记录。"
+        });
     }
 
     private static object MapToDto(Transaction t) => new
@@ -102,16 +128,7 @@ public class TransactionsController : ControllerBase
         price = (double)t.Price,
         amount = (double)t.Amount,
         tradeDate = t.TransactionDate.ToString("yyyy-MM-dd"),
-        accountId = t.AccountId
+        accountId = t.AccountId,
+        remark = t.Remark
     };
 }
-
-public record TransactionDto(
-    string Symbol,
-    string? Name,
-    string Type,
-    decimal Quantity,
-    decimal Price,
-    string TradeDate,
-    int AccountId
-);
